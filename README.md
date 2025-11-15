@@ -7,7 +7,8 @@ Este repositório documenta um projeto pessoal que integra WhatsApp → n8n → 
 
 * WhatsApp (Webhook) → n8n (orquestração) → Conversão Áudio→ Texto → LLM (estrutura JSON) → Google Sheets (append) → Power BI (visualização)
 
-> O print do workflow do n8n foi exportado e está disponível em `docs/fluxo_n8n.png`.
+![Fluxo do n8n](docs/fluxo_n8n.png)
+
 
 ---
 
@@ -18,11 +19,8 @@ whatsapp-financial-tracker/
 ├─ docs/                    # prints, diagramas e material visual
 ├─ workflows/               # export do workflow do n8n (.json)
 ├─ prompts/                 # prompts e exemplos de instruções para o LLM
-├─ scripts/                 # scripts auxiliares (ex: validações, testes locais)
-├─ .env.example             # variáveis de ambiente exemplares
-├─ README.md                # este arquivo
-├─ LICENSE
-└─ requirements.txt         # (opcional) dependências Python
+├─ README.md                
+
 ```
 
 ---
