@@ -12,7 +12,7 @@ Este repositório documenta um projeto pessoal que integra WhatsApp → n8n → 
 
 ---
 
-## 🗂️ Estrutura do repositório
+##  Estrutura do repositório
 
 ```
 whatsapp-financial-tracker/
@@ -25,75 +25,37 @@ whatsapp-financial-tracker/
 
 ---
 
-## 🧩 Componentes principais
+##  Componentes principais
 
 * **n8n** — Orquestração do fluxo (Webhook, switches, conversão de base64, chamadas HTTP para LLM, formatação e append ao Sheets).
-* **WhatsApp API / Provider** — Ponto de entrada dos áudios (via webhook para n8n).
-* **LLM (ex: OpenAI / outro)** — Transforma texto/transcrição em JSON estruturado.
+* **Evolution API** — Ponto de entrada dos áudios (via webhook para n8n).
+* **LLM (Gemini)** — Transforma texto/transcrição em JSON estruturado.
 * **Google Sheets API** — Persistência simples para histórico de gastos.
-* **Power BI** — Dashboard para análise de gastos agregados (categoria, por período, médias, alertas).
+* **Power BI** — Dashboard para análise de gastos agregados (categoria, por período, médias).
 
 ---
 
-## 🛠️ Como reproduzir localmente / Deploy
-
-> Abaixo há passos gerais — adapte conforme seu provedor de WhatsApp, chave do LLM e infraestrutura.
-
-### 1) Pré-requisitos
-
-* Conta e acesso à API do WhatsApp (ou provedor compatível)
-* n8n (local via Docker, n8n.cloud ou servidor)
-* Chave de API do LLM (ex.: OpenAI)
-* Conta Google com acesso à Sheets API e credenciais
-* Power BI Desktop (para criar o dashboard) ou Power BI Service
-
-### 2) Variáveis de ambiente (exemplo `.env`)
-
-```
-WHATSAPP_WEBHOOK_SECRET=xxxx
-LLM_API_KEY=sk-xxxx
-GOOGLE_CREDENTIALS_JSON=path/to/credentials.json
-SHEETS_SPREADSHEET_ID=1aBcDeFG...
-N8N_HOST=http://localhost:5678
-```
-
-> Coloque um `.env.example` no repositório com os nomes das variáveis (sem valores reais).
-
-### 3) Importar o workflow no n8n
-
-1. No n8n, clique em **Import** → escolha o arquivo `workflows/whatsapp_workflow.json` (export do seu workflow).
-2. Ajuste as credenciais (WhatsApp webhook, LLM, Google Sheets) dentro do editor do n8n.
-3. Ative o workflow.
-
-### 4) Teste do fluxo
-
-* Envie um áudio pelo WhatsApp para o número configurado.
-* Verifique logs no n8n: conversão base64 → transcrição → chamada LLM → formatação JSON → append no Sheets.
-* Abra a planilha no Google Sheets e confirme a linha adicionada.
-
----
-
-## 🔧 Descrição dos nós do workflow (baseado no print enviado)
+## Descrição dos nós do workflow (baseado no print)
 
 1. **Webhook (INPUT DADOS)**
 
-   * Recebe POST do provedor do WhatsApp.
+   * Recebe POST do Evolution API.
    * Dispara o fluxo no n8n.
 
-2. **Verificações (É meu grupo? / Switch)**
+2. **Verificações (É meu grupo?)**
 
-   * Filtra mensagens que não são do grupo/conta desejada.
+   * Filtra mensagens que não são do grupo do Controle Financeiro.
    * Se não for válido → operation do nothing.
 
 3. **Transcrições**
 
    * **Converte Audio - String**: move base64 string para arquivo (para transcrição se necessário).
-   * **Transcrição**: nó que executa a transcrição (pode ser um serviço externo ou LLM que aceite áudio).
+   * **Transcrição**: nó que executa a transcrição utilizando a LLM Gemini e estrutura em JSON.
    * **Analista Financeiro (LLM)**: recebe texto e executa prompt para estruturar em JSON com campos padrão.
 
 4. **Manipulação (Formatação JSON)**
 
-   * Normaliza campos (converte valor para float, formata data, categorização básica).
+   * Normaliza campos.
 
 5. **Salva Dados (Adiciona a Planilha)**
 
@@ -105,12 +67,12 @@ N8N_HOST=http://localhost:5678
 
 ---
 
-## 📋 Exemplo de prompt (arquivo em `prompts/llm_analista_financeiro.md`)
+## Exemplo de prompt (arquivo em `prompts`)
 
 ```text
 Você é um analista financeiro. Recebe uma transcrição de áudio com a seguinte mensagem:
 
-"Ontem gastei 37.50 no almoço, categoria alimentação, 2025-11-11, almoço com cliente"
+"Ontem gastei 37.50 no almoço com cliente e foi pago no crédito"
 
 Retorne apenas um JSON com as chaves: data (YYYY-MM-DD), categoria, valor (float), descricao.
 Se algum campo não for informado, deixe como null.
@@ -123,20 +85,10 @@ Se algum campo não for informado, deixe como null.
   "data": "2025-11-11",
   "categoria": "Alimentação",
   "valor": 37.5,
-  "descricao": "Almoço com cliente"
+  "descricao": "Almoço com cliente",
+  "forma_pagamento": "Crédito"
 }
 ```
-
----
-
-## ✅ Boas práticas e recomendações
-
-* **Validação de entradas**: Sempre valide formato de data e tipo numérico do valor antes de salvar.
-* **Tratamento de ruído na transcrição**: Tenha regras fallback (ex: regex para extrair números) caso a LLM não retorne corretamente.
-* **Segurança & privacidade**: Áudios e transcrições são dados sensíveis — remova logs com dados pessoais antes de publicar e use credenciais seguras.
-* **Rate limits**: Garanta retry/backoff para chamadas ao LLM e API do WhatsApp.
-* **Testes unitários**: Mantenha scripts em `scripts/` para validar prompts e transformações JSON.
-
 ---
 
 ## 📈 Power BI — sugestões de métricas
@@ -148,34 +100,3 @@ Se algum campo não for informado, deixe como null.
 * Alertas: gasto acima do orçamento mensal
 
 ---
-
-## 🎯 Roadmap / Próximos passos
-
-* Categorização automática por taxa de confiança do LLM
-* Treinar/ajustar prompt com few-shot examples para melhorar precisão
-* Adicionar integração com um banco de dados SQL para histórico (se necessário)
-* Notificações proativas (ex: quando exceder X no mês)
-
----
-
-## ⚠️ Observações legais / privacidade
-
-Este projeto lida com dados de consumo pessoal (áudio e transcrições). Se for publicar o repositório com exemplos reais, **anonimize** as amostras de áudio e as linhas na planilha. Nunca commit credenciais (tokens/API keys).
-
----
-
-## ✍️ Autor
-
-**Felipe Duarte** — Analista / Cientista de Dados
-
-Contato: adiciona teu LinkedIn no README final antes de publicar.
-
----
-
-Se quiser, eu já gero:
-
-* 1. o `README.md` pronto para o repo (com o conteúdo acima),
-* 2. um `workflows/whatsapp_workflow.json` de exemplo (esqueleto) pronto pra importar no n8n, ou
-* 3. adapto o README para inglês para colocar no GitHub público.
-
-Diz o que prefere que eu gere agora.
