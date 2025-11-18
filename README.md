@@ -1,7 +1,7 @@
 # Controle Financeiro com LLM e n8n
 
 ## Visão geral
-Este repositório documenta um projeto pessoal que integra WhatsApp → n8n → LLM → Google Sheets → Power BI. O objetivo é permitir o registro rápido de gastos pessoais falando no WhatsApp: o áudio é transcrito e convertido para JSON (data, categoria, valor, descrição, pessoa, método de pagamento), salvo em uma planilha e exibido em dashboards para o melhor acompanhamento.
+Este foi um projeto pessoal onde queria começar a monitorar mais de perto quais eram meus gastos ao longo do mês, então criei um grupo no Whatsapp onde adicionei meus Pais e Namorada. O objetivo é permitir o registro rápido de gastos pessoais falando no WhatsApp: o áudio é transcrito e convertido para JSON (data, categoria, valor, descrição, pessoa e método de pagamento), salvo tudo isso em uma planilha e exibo em um dashboard para melhorar o acompanhamento.
 
 **Fluxo (resumido):**
 
@@ -91,12 +91,17 @@ Se algum campo não for informado, deixe como null.
 ```
 ---
 
-## 📈 Power BI — sugestões de métricas
+## Dashboard dos Gastos
 
-* Despesa total por mês
-* Despesa média por dia
-* Top 5 categorias (por valor)
-* Despesa por dia da semana
-* Alertas: gasto acima do orçamento mensal
+Para o dashboard eu criei indicadores que eu gostaria de acompanhar e que ficasse o mais clean possível, e pra isso utilizei cores mais neutras. Os indicadores que colquei foram:
+* Total de Gastos
+* Média por Transação
+* Maior Gasto
+* Gastos por Categoria
+* Evolução dos Gastos ao Longo do Tempo
+* Gastos por Pessoa (Eu, Pai, Mãe e Namorada)
+* Tabela com a Descrição dos Gastos
+
+![Dashboard dos Gastos](docs/dashboard.png)
 
 ---
