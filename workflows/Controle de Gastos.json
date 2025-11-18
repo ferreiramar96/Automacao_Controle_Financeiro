@@ -1,0 +1,585 @@
+{
+  "name": "Controle de Gastos",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "09209c9b-abd4-4d65-aea5-e5125eb018c0",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        16,
+        -112
+      ],
+      "id": "17196d9e-f13a-429b-b2ac-e72883e3d453",
+      "name": "Webhook",
+      "webhookId": "09209c9b-abd4-4d65-aea5-e5125eb018c0"
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "body.data.message.base64",
+        "options": {
+          "mimeType": "audio/mpeg"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        -128
+      ],
+      "id": "d0d195fa-3846-4a3d-b0d1-5e9aa8bc90be",
+      "name": "Converte Audio - String"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "=Você é um assistente financeiro que analisa gravações de voz em português do Brasil.  \nSua tarefa é **transcrever o áudio** e **extrair os seguintes dados de uma despesalembrando que sua saída deve ser exatamente como abaixo**:\n\n```\n{\n\t\"descricao\": \"\",   \n\t\"categoria\": \"\",   \n\t\"data\": \"\",   \n\t\"valor\": 0 ,\n    \"meio_pagamento\": \"\"\n}\n```\n### Regras:\n- **\"descricao\"**: descreva em poucas palavras a despesa mencionada  \n    _(ex: \"almoço na padaria\", \"uber para o trabalho\", \"remédio na farmácia\")._\n- **\"categoria\"**: classifique em uma das opções:  \n    `[\"Alimentação\", \"Gasolina/Transporte\", \"Saúde\", \"Moradia\", \"Lazer\", \"Educação\", \"Academia/Suplementos\", \"Educação\", \"Outros\"]`.\n- **\"data\"**: use o formato ISO (`YYYY-MM-DD`).\n    - Se o áudio mencionar “hoje”, “ontem” ou um dia da semana, interprete em relação à **data da mensagem**:\n        `DataMensagem: {{ $('É meu grupo?').item.json.body.date_time }}`\n- **\"valor\"**: número float e sem expressões de dinheiro, quero apenas o valor numeric sempre com 2 casas deciamais.\n    - Se o valor não for mencionado, coloque `0`\n- **\"meio_pagamento\"**:  _(ex: Débito, Crédito, Pix, Dinheiro)_ se não for mencionado a forma de pagamento, colocar \"Não mencionado\"\n        \n---\n### Importante:\n\n- Sempre responda **somente JSON válido**, sem texto extra, explicações ou comentários.\n- **Não invente** valores nem categorias — se não tiver certeza, use `\"Outros\"`.\n- Quando a data não for mencionada, colocar sempre o dia atual.\n---\n### Exemplo de saída 1:\n```{\n\"descricao\": \"almoço no restaurante\",   \n\"categoria\": \"Alimentação\",   \n\"data\": \"2025-10-28\",   \n\"valor\": 45.90 \n}\n```\n\n### Exemplo de saída 2:\n```{\n\"descricao\": \"almoço no restaurante\",   \n\"categoria\": \"Alimentação\",   \n\"data\": \"2025-10-28\",   \n\"valor\": 45.90,\n\"meio_pagamento: Crédito\"\n}\n``` ",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        880,
+        -128
+      ],
+      "id": "f54de1ef-3cc7-4528-a7fd-6d8539d4d9c5",
+      "name": "Transcrição",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "HbcTtAu80U47wlC5",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.data.messageType }}",
+                    "rightValue": "audioMessage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "a32c119a-3800-4f0d-b850-51949eb899b0"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "ce07bd82-efc9-4621-bb28-0eb7780d8453",
+                    "leftValue": "={{ $json.body.data.messageType }}",
+                    "rightValue": "conversation",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Mensagem"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        432,
+        -16
+      ],
+      "id": "b51925a5-c56e-4f7d-81c6-9018f9ee3775",
+      "name": "Switch"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        432,
+        -160
+      ],
+      "id": "7bfd0b55-3acc-40e3-930c-92f2678ce9c3",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "11ec95f3-8831-4ca6-a3e5-41fa04e576f1",
+              "leftValue": "={{ $json.body.data.key.remoteJid }}",
+              "rightValue": "120363403990307423@g.us",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        256,
+        -112
+      ],
+      "id": "1cf3fab6-0e11-40ba-b0a6-be3b98dd9a91",
+      "name": "É meu grupo?"
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "import json\nimport re\n\n# --- Entrada ---\n# Você pode ajustar conforme o nome do campo vindo do node anterior\nif _input.first().json.content.parts[0].text:\n  raw = _input.first().json.content.parts[0].text\n\nelse:\n  raw = _input.first().json.content.parts[0].text\n\ntry:\n    # 1. Garante que seja string\n    if not isinstance(raw, str):\n        raw = json.dumps(raw)\n\n    # 2. Limpeza de formatação (\\n, \\\", ```json)\n    clean = (\n        raw.replace(\"```json\", \"\")\n           .replace(\"```\", \"\")\n           .replace(\"\\\\n\", \"\\n\")\n           .replace('\\\\\"', '\"')\n           .strip()\n    )\n\n    # 3. Converte em objeto Python (dict)\n    obj = json.loads(clean)\n\n    # 4. Retorna como JSON válido no n8n\n    return {\"json\": obj}\n\nexcept Exception as e:\n    return {\n        \"json\": {\n            \"error\": \"Erro ao converter JSON\",\n            \"details\": str(e),\n            \"raw\": raw\n        }\n    }\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        -112
+      ],
+      "id": "664dc359-76cc-40cd-b6ed-297129651d1a",
+      "name": "Formatação JSON"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $json.body.data.message.conversation }}"
+            }
+          ]
+        },
+        "options": {
+          "systemMessage": "=Você é um assistente financeiro que analisa mensagens de compras feitas* e **extrai os seguintes dados de uma despesa,lembrando que sua saída deve ser exatamente como abaixo**: ``` { \t\"descricao\": \"\",    \t\"categoria\": \"\",    \t\"data\": \"\",    \t\"valor\": 0 ,     \"meio_pagamento\": \"\" } ``` ### Regras: - **\"descricao\"**: descreva em poucas palavras a despesa mencionada       _(ex: \"almoço na padaria\", \"uber para o trabalho\", \"remédio na farmácia\")._ - **\"categoria\"**: classifique em uma das opções:       `[\"Alimentação\", \"Gasolina/Transporte\", \"Saúde\", \"Moradia\", \"Lazer\", \"Educação\", \"Academia/Suplementos\", \"Estudos\", \"Outros\"]`. - **\"data\"**: use o formato ISO (`YYYY-MM-DD`).     - Se o áudio mencionar “hoje”, “ontem” ou um dia da semana, interprete em relação à **data da mensagem**:         `DataMensagem: {{ $('É meu grupo?').item.json.body.date_time }}` - **\"valor\"**: número float e sem expressões de dinheiro, quero apenas o valor numeric sempre com 2 casas deciamais.     - Se o valor não for mencionado, coloque `0` - **\"meio_pagamento\"**:  _(ex: Débito, Crédito, Pix, Dinheiro)_ se não for mencionado a forma de pagamento, colocar \"Não mencionado\"          --- ### Importante:  - Sempre responda **somente JSON válido**, sem texto extra, explicações ou comentários. - **Não invente** valores nem categorias — se não tiver certeza, use `\"Outros\"`. \n- Quando a data não for mencionada, colocar sempre o dia atual.\n--- ### Exemplo de saída 1: ```{ \"descricao\": \"almoço no restaurante\",    \"categoria\": \"Alimentação\",    \"data\": \"2025-10-28\",    \"valor\": 45.90  } ```  ### Exemplo de saída 2: ```{ \"descricao\": \"almoço no restaurante\",    \"categoria\": \"Alimentação\",    \"data\": \"2025-10-28\",    \"valor\": 45.90, \"meio_pagamento: Crédito\" } ``` "
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        688,
+        48
+      ],
+      "id": "15e55835-c19e-42dd-a957-cc217d79adf8",
+      "name": "Analista Financeiro",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "HbcTtAu80U47wlC5",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "         INPUT DADOS",
+        "height": 288,
+        "width": 256,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        -224
+      ],
+      "id": "a6521b97-79e6-4ced-91e0-f6c4a3221314",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "              VERIFICAÇÕES\n",
+        "height": 368,
+        "width": 336,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        240,
+        -240
+      ],
+      "id": "bcfe3f5c-5419-4e84-9386-57f0ef960be0",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "              TRANSCRIÇÕES\n",
+        "height": 416,
+        "width": 368,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        624,
+        -240
+      ],
+      "id": "566d7903-964f-4645-b318-d9912ed6c9d8",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "          MANIPULAÇÃO",
+        "height": 288,
+        "width": 256,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        -224
+      ],
+      "id": "df157479-1ee9-479b-9726-655f5f98c412",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "          SALVA DADOS",
+        "height": 288,
+        "width": 256,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        -224
+      ],
+      "id": "7db92705-8eed-4975-a752-5afcefea6150",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lDyZWx4fVX9u463_Btop9teBEok1TL8wY9o5LK8IJ8Q",
+          "mode": "list",
+          "cachedResultName": "Financeiro",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lDyZWx4fVX9u463_Btop9teBEok1TL8wY9o5LK8IJ8Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1359869702,
+          "mode": "list",
+          "cachedResultName": "Controle Financeiro",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lDyZWx4fVX9u463_Btop9teBEok1TL8wY9o5LK8IJ8Q/edit#gid=1359869702"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Pessoa": "={{ $('É meu grupo?').item.json.body.data.pushName }}",
+            "Descrição": "={{ $json.descricao }}",
+            "Categoria": "={{ $json.categoria }}",
+            "Data": "={{ $json.data }}",
+            "Valor": "={{ $json.valor }}",
+            "Forma de Pagamento": "={{ $json.meio_pagamento }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Pessoa",
+              "displayName": "Pessoa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Descrição",
+              "displayName": "Descrição",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Categoria",
+              "displayName": "Categoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Data",
+              "displayName": "Data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Valor",
+              "displayName": "Valor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Forma de Pagamento",
+              "displayName": "Forma de Pagamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1424,
+        -112
+      ],
+      "id": "4a695973-2aa7-4974-9353-3e71364dd27c",
+      "name": "Adiciona a Planilha",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RShtXgQACVOcAyMS",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "          CONFIRMAÇÃO",
+        "height": 288,
+        "width": 256,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1648,
+        -224
+      ],
+      "id": "f1e61dcf-1fb7-4d6a-a21f-83626a6e8ef3",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://evolution-qqdnapxy46m95hwuvbauf297.n8nready.com.br/message/sendText/n8n-wpp",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "VI8aX4jZx98nXIIru1kJKDnOMX8GJiCn"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $('É meu grupo?').item.json.body.data.key.remoteJid }}\", \n  \"textMessage\": {\n    \"text\": \"Salvo! ✅\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1728,
+        -112
+      ],
+      "id": "78ed01c4-0f9a-4384-b648-399e54607bc9",
+      "name": "Envia Mensagem de Confirmação",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HLJvD7XpL7KuUG67",
+          "name": "Header Auth account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "É meu grupo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Converte Audio - String": {
+      "main": [
+        [
+          {
+            "node": "Transcrição",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcrição": {
+      "main": [
+        [
+          {
+            "node": "Formatação JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Converte Audio - String",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Analista Financeiro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É meu grupo?": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analista Financeiro": {
+      "main": [
+        [
+          {
+            "node": "Formatação JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatação JSON": {
+      "main": [
+        [
+          {
+            "node": "Adiciona a Planilha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Adiciona a Planilha": {
+      "main": [
+        [
+          {
+            "node": "Envia Mensagem de Confirmação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "873cb260-b279-4518-9310-a44e123aaf93",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7d21159249ffe44058e2e12394f5a23428a61ee3e12457c8c4e3c99353a6f47e"
+  },
+  "id": "zC3OUzq8IPjC964F",
+  "tags": []
+}
