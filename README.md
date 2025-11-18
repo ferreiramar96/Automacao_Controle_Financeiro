@@ -1,4 +1,4 @@
-# Controle Financeiro com LLM e n8n
+# Controle de Gastos com LLM e n8n
 
 ## Visão geral
 Este foi um projeto pessoal onde queria começar a monitorar mais de perto quais eram meus gastos ao longo do mês, então criei um grupo no Whatsapp onde adicionei meus Pais e Namorada. O objetivo é permitir o registro rápido de gastos pessoais falando no WhatsApp: o áudio é transcrito e convertido para JSON (data, categoria, valor, descrição, pessoa e método de pagamento), salvo tudo isso em uma planilha e exibo em um dashboard para melhorar o acompanhamento.
